@@ -6,7 +6,11 @@ class AccountSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Account
-        fields = ['email', 'password', 'confirm_password']
+        fields = ['email', 'password', 'confirm_password', 'role']
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'role': {'default': 'user'}  # Default role is 'user'
+        }
 
     def validate(self, data):
         if data['password'] != data['confirm_password']:
