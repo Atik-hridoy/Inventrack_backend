@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Account
+from django.contrib.auth.hashers import make_password
 
 class AccountSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
@@ -9,7 +10,7 @@ class AccountSerializer(serializers.ModelSerializer):
         fields = ['email', 'password', 'confirm_password', 'role']
         extra_kwargs = {
             'password': {'write_only': True},
-            'role': {'default': 'user'}  # Default role is 'user'
+            'role': {'default': 'user'}
         }
 
     def validate(self, data):
@@ -18,7 +19,12 @@ class AccountSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        role = validated_data.get('role', 'user')
+        validated_data['password'] = make_password(validated_data['password'])
         validated_data.pop('confirm_password')
+        if role == 'user':
+            validated_data['is_approved'] = True
+            validated_data['is_active_staff'] = True
         return Account.objects.create(**validated_data)
 
 class LoginSerializer(serializers.Serializer):
