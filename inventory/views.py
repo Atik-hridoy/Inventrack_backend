@@ -1,18 +1,37 @@
-from django.shortcuts import render
-from rest_framework import generics
-from .models import Product
-from .serializers import ProductSerializer
+from rest_framework import generics, status
+from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
-class ProductCreateView(generics.CreateAPIView):
+from .models import Product, ProductModification
+from .serializers import ProductSerializer, ProductModificationSerializer
+
+class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    parser_classes = [MultiPartParser, FormParser, JSONParser]  # Allow file uploads for images
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-
-
-class ProductListView(generics.ListAPIView):
+class ProductRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    pagination_class = None  # Disable pagination for simplicity
-    parser_classes = (MultiPartParser, FormParser, JSONParser)  # Allow file uploads for images
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        # Track modification
+        ProductModification.objects.create(
+            product=instance,
+            modified_by=self.request.data.get('modified_by', 'unknown'),  # Replace with user info if available
+            change_description=self.request.data.get('change_description', 'Updated product')
+        )
+
+    def perform_destroy(self, instance):
+        # Track deletion
+        ProductModification.objects.create(
+            product=instance,
+            modified_by=self.request.data.get('modified_by', 'unknown'),
+            change_description='Deleted product'
+        )
+        instance.delete()
+
+class ProductModificationListView(generics.ListAPIView):
+    queryset = ProductModification.objects.all()
+    serializer_class = ProductModificationSerializer
