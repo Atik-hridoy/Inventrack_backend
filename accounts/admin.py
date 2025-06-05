@@ -5,6 +5,7 @@ from .models import Account
 class AccountAdmin(admin.ModelAdmin):
     list_display = [
         'email',
+        'username',      # <-- Show username in the admin list view
         'password',
         'role',
         'is_approved',
