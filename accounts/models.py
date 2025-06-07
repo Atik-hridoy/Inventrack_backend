@@ -7,7 +7,7 @@ class Account(models.Model):
         ('user', 'User'),
     )
     email = models.EmailField(unique=True)
-    username = models.CharField(max_length=150, unique=False, null=True, blank=True, default='defaultuser')
+    username = models.CharField(max_length=150, unique=True, default='defaultuser')
 
     password = models.CharField(max_length=128)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')

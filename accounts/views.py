@@ -21,24 +21,45 @@ class LoginView(APIView):
         if serializer.is_valid():
             email = serializer.validated_data['email']
             password = serializer.validated_data['password']
+
             try:
                 account = Account.objects.get(email=email)
-                if check_password(password, account.password):
-                    # Only check approval/deactivation for staff
-                    if account.role == 'staff':
-                        if not account.is_approved or not account.is_active_staff:
-                            return Response({'error': 'Staff not approved or deactivated.'}, status=403)
-                    # Users and approved staff can log in
-                    return Response({
-                        "message": "Login successful.",
-                        "email": account.email,
-                        "role": account.role
-                    }, status=status.HTTP_200_OK)
-                else:
-                    return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
             except Account.DoesNotExist:
-                return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    "success": False,
+                    "error": "Invalid email or password."
+                }, status=status.HTTP_401_UNAUTHORIZED)
+
+            if not check_password(password, account.password):
+                return Response({
+                    "success": False,
+                    "error": "Invalid email or password."
+                }, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Optional: Check if staff is active/approved
+            if account.role == 'staff':
+                if not account.is_approved or not account.is_active_staff:
+                    return Response({
+                        "success": False,
+                        "error": "Staff not approved or deactivated."
+                    }, status=status.HTTP_403_FORBIDDEN)
+
+            # ✅ Successful login
+            user_data = {
+                "email": account.email,
+                "username": account.username,
+                "role": account.role
+            }
+            return Response({
+                "user": user_data
+            }, status=status.HTTP_200_OK)
+
+        # Validation errors
+        return Response({
+            "success": False,
+            "error": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
 
 class UserListView(APIView):
     def get(self, request):

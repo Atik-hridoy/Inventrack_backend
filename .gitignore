@@ -1,2 +1,5 @@
 __pycache__/
 */migrations/
+# Ignore dummy data generators
+accounts/management/commands/generate_dummy_users.py
+inventory/management/commands/generate_dummy_products.py

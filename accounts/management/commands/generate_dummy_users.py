@@ -19,13 +19,19 @@ class Command(BaseCommand):
             email = fake.unique.email()
             password = 'test12345'
             role = random.choice(roles)
-            # For your Account model, set is_approved and is_active_staff as needed
             is_approved = True if role == 'user' else False
             is_active_staff = True
+
+            # Generate a unique username
+            while True:
+                username = f"{role}{fake.unique.random_number(digits=6)}"
+                if not Account.objects.filter(username=username).exists():
+                    break
 
             if not Account.objects.filter(email=email).exists():
                 account = Account.objects.create(
                     email=email,
+                    username=username,
                     password=make_password(password),
                     role=role,
                     is_approved=is_approved,
@@ -33,5 +39,5 @@ class Command(BaseCommand):
                     raw_password=password  # Store plain password for testing
                 )
                 self.stdout.write(self.style.SUCCESS(
-                    f"Created {role}: {email} | password: {password}"
+                    f"Created {role}: {email} | username: {username} | password: {password}"
                 ))
