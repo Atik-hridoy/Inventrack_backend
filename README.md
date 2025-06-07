@@ -15,6 +15,16 @@
 - 🗃️ Django Admin for full control and data management
 
 ---
+## Screenshoot 
+![image](https://github.com/user-attachments/assets/470446a5-68a3-4479-8b6d-112d1c46ca09)
+![image](https://github.com/user-attachments/assets/c935406e-a4ad-4fc6-a0d6-ebd229fc90e5)
+![image](https://github.com/user-attachments/assets/0e6e2fc0-104e-4969-a456-54922708936a)
+![image](https://github.com/user-attachments/assets/5a3b6cc5-9378-4708-9098-e3603b10d74b)
+
+
+
+
+
 
 ## 🏗️ Tech Stack
 
