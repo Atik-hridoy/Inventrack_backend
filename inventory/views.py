@@ -1,37 +1,93 @@
-from rest_framework import generics, status
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework import status
 
 from .models import Product, ProductModification
 from .serializers import ProductSerializer, ProductModificationSerializer
 
-class ProductListCreateView(generics.ListCreateAPIView):
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
+class ProductListCreateView(APIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-class ProductRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
+    def get(self, request):
+        products = Product.objects.all()
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def perform_update(self, serializer):
-        instance = serializer.save()
-        # Track modification
-        ProductModification.objects.create(
-            product=instance,
-            modified_by=self.request.data.get('modified_by', 'unknown'),  # Replace with user info if available
-            change_description=self.request.data.get('change_description', 'Updated product')
-        )
+    def post(self, request):
+        serializer = ProductSerializer(data=request.data)
+        if serializer.is_valid():
+            product = serializer.save()
+            return Response(ProductSerializer(product).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def perform_destroy(self, instance):
-        # Track deletion
+class ProductRetrieveUpdateDestroyView(APIView):
+    def get_object(self, pk):
+        try:
+            return Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        product = self.get_object(pk)
+        if not product:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ProductSerializer(product)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        product = self.get_object(pk)
+        if not product:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ProductSerializer(product, data=request.data)
+        if serializer.is_valid():
+            instance = serializer.save()
+            ProductModification.objects.create(
+                product=instance,
+                modified_by=request.data.get('modified_by', 'unknown'),
+                change_description=request.data.get('change_description', 'Updated product')
+            )
+            return Response(ProductSerializer(instance).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk):
+        product = self.get_object(pk)
+        if not product:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ProductSerializer(product, data=request.data, partial=True)
+        if serializer.is_valid():
+            instance = serializer.save()
+            ProductModification.objects.create(
+                product=instance,
+                modified_by=request.data.get('modified_by', 'unknown'),
+                change_description=request.data.get('change_description', 'Partially updated product')
+            )
+            return Response(ProductSerializer(instance).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        product = self.get_object(pk)
+        if not product:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
         ProductModification.objects.create(
-            product=instance,
-            modified_by=self.request.data.get('modified_by', 'unknown'),
+            product=product,
+            modified_by=request.data.get('modified_by', 'unknown'),
             change_description='Deleted product'
         )
-        instance.delete()
+        product.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-class ProductModificationListView(generics.ListAPIView):
-    queryset = ProductModification.objects.all()
-    serializer_class = ProductModificationSerializer
+class ProductModificationListView(APIView):
+    def get(self, request):
+        modifications = ProductModification.objects.all()
+        serializer = ProductModificationSerializer(modifications, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class GroupedProductFeedView(APIView):
+    def get(self, request):
+        grouped = {}
+        for cat, _ in Product.CATEGORY_CHOICES:
+            products = Product.objects.filter(category=cat)
+            serializer = ProductSerializer(products, many=True)
+            grouped[cat] = serializer.data
+        return Response({"success": True, "data": grouped}, status=status.HTTP_200_OK)

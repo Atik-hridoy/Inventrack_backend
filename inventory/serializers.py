@@ -4,7 +4,10 @@ from .models import Product, ProductModification
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = '__all__'
+        fields = [
+            'id', 'name', 'sku', 'quantity', 'price',
+            'description', 'image', 'category'  # <-- Make sure 'category' is here!
+        ]
 
 class ProductModificationSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
