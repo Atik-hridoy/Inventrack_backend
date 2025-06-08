@@ -19,18 +19,26 @@ class AccountSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        validated_data['password'] = make_password(validated_data['password'])
-        validated_data.pop('confirm_password')
-
+        validated_data.pop('confirm_password', None)
         role = validated_data.get('role', 'user')
-        if role == 'user':
+        if role == 'staff':
+            validated_data['is_approved'] = False
+            validated_data['is_active_staff'] = False
+        elif role == 'user':
             validated_data['is_approved'] = True
             validated_data['is_active_staff'] = True
-
-        return Account.objects.create(**validated_data)
+        # Always use the model manager to create the user
+        return Account.objects.create_user(**validated_data)
 
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        fields = ['id', 'email', 'username', 'role', ]
+        read_only_fields = fields
 

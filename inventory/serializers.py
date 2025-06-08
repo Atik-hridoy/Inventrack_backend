@@ -6,7 +6,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'sku', 'quantity', 'price',
-            'description', 'image', 'category'  # <-- Make sure 'category' is here!
+            'description', 'image', 'category'
         ]
 
 class ProductModificationSerializer(serializers.ModelSerializer):
