@@ -36,8 +36,6 @@ SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-default-secret-key")
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = ['*']
-
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -53,6 +51,8 @@ INSTALLED_APPS = [
     'accounts',
     'inventory',
 ]
+
+AUTH_USER_MODEL = 'accounts.Account'
 
 
 
@@ -128,6 +128,23 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+
+
+
+
+
+
 
 
 # Internationalization

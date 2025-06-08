@@ -1,4 +1,3 @@
-
 from django.contrib import admin
 
 from .models import Product
@@ -12,4 +11,8 @@ class ProductAdmin(admin.ModelAdmin):
         'quantity',
         'image',
         'sku',
+        'category',  
     ]
+    list_filter = ['category',]
+    search_fields = ['name', 'sku', 'category__name']
+    ordering = ['name']

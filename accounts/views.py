@@ -3,11 +3,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import AccountSerializer, LoginSerializer
+from .serializers import AccountSerializer, LoginSerializer, UserProfileSerializer
 from .models import Account
 from django.contrib.auth.hashers import check_password
+from rest_framework.permissions import IsAuthenticated
 
 class RegisterView(APIView):
+    permission_classes = []  # <-- No authentication required
+
     def post(self, request):
         serializer = AccountSerializer(data=request.data)
         if serializer.is_valid():
@@ -16,6 +19,7 @@ class RegisterView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
+    permission_classes = []  # <-- No authentication required
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
@@ -25,24 +29,13 @@ class LoginView(APIView):
             try:
                 account = Account.objects.get(email=email)
             except Account.DoesNotExist:
-                return Response({
-                    "success": False,
-                    "error": "Invalid email or password."
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({"success": False, "error": "Invalid email or password."}, status=401)
 
             if not check_password(password, account.password):
-                return Response({
-                    "success": False,
-                    "error": "Invalid email or password."
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({"success": False, "error": "Invalid email or password."}, status=401)
 
-            # Optional: Check if staff is active/approved
-            if account.role == 'staff':
-                if not account.is_approved or not account.is_active_staff:
-                    return Response({
-                        "success": False,
-                        "error": "Staff not approved or deactivated."
-                    }, status=status.HTTP_403_FORBIDDEN)
+            if account.role == 'staff' and not account.is_approved:
+                return Response({"success": False, "error": "Staff not approved by admin."}, status=403)
 
             # ✅ Successful login
             user_data = {
@@ -59,11 +52,21 @@ class LoginView(APIView):
             "success": False,
             "error": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        account = request.user
+        serializer = AccountSerializer(account)
+        return Response(serializer.data)
 
 
 class UserListView(APIView):
+    permission_classes = []
     def get(self, request):
-        users = Account.objects.all()
+        users = Account.objects.filter(is_superuser=False)
         serializer = AccountSerializer(users, many=True)
         return Response({
             "total_users": users.count(),
