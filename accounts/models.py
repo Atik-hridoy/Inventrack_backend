@@ -35,7 +35,14 @@ class Account(AbstractBaseUser, PermissionsMixin):
     is_approved = models.BooleanField(default=False)
     is_active_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)  # <-- Add this line
+    is_staff = models.BooleanField(default=False)
+
+    # New profile fields
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    nickname = models.CharField(max_length=50, blank=True, null=True)
+    address_street = models.CharField(max_length=255, blank=True, null=True)
+    address_house = models.CharField(max_length=50, blank=True, null=True)
+    address_district = models.CharField(max_length=100, blank=True, null=True)
 
     objects = AccountManager()
 
@@ -44,6 +51,17 @@ class Account(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+
+class UserProfileEditHistory(models.Model):
+    user = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='edit_histories')
+    edited_at = models.DateTimeField(auto_now_add=True)
+    field_changed = models.CharField(max_length=50)
+    old_value = models.TextField(blank=True, null=True)
+    new_value = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.user.email} changed {self.field_changed} at {self.edited_at}"
 
 
 
