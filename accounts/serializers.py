@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Account
+from .models import Account, UserProfileEditHistory
 from django.contrib.auth.hashers import make_password
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -7,7 +7,10 @@ class AccountSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Account
-        fields = ['id', 'email', 'username', 'password', 'confirm_password', 'role']
+        fields = [
+            'id', 'email', 'username', 'password', 'confirm_password', 'role',
+            'phone', 'nickname', 'address_street', 'address_house', 'address_district'
+        ]
         extra_kwargs = {
             'password': {'write_only': True, 'min_length': 6},
             'role': {'default': 'user'},
@@ -39,6 +42,16 @@ class LoginSerializer(serializers.Serializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ['id', 'email', 'username', 'role', ]
+        fields = [
+            'id', 'email', 'username', 'role',
+            'phone', 'nickname', 'address_street', 'address_house', 'address_district'
+        ]
+        read_only_fields = ['id', 'email', 'username', 'role']
+
+
+class UserProfileEditHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfileEditHistory
+        fields = ['id', 'user', 'edited_at', 'field_changed', 'old_value', 'new_value']
         read_only_fields = fields
 

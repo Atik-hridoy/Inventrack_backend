@@ -3,10 +3,11 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import AccountSerializer, LoginSerializer, UserProfileSerializer
-from .models import Account
+from .serializers import AccountSerializer, LoginSerializer, UserProfileSerializer, UserProfileEditHistorySerializer
+from .models import Account, UserProfileEditHistory
 from django.contrib.auth.hashers import check_password
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 
 class RegisterView(APIView):
     permission_classes = []  # <-- No authentication required
@@ -39,6 +40,7 @@ class LoginView(APIView):
 
             # ✅ Successful login
             user_data = {
+                "id": account.id,  # Include user id here
                 "email": account.email,
                 "username": account.username,
                 "role": account.role
@@ -55,13 +57,50 @@ class LoginView(APIView):
     
 
 class UserProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = []  # Allow any user (no authentication required)
 
     def get(self, request):
-        account = request.user
-        serializer = AccountSerializer(account)
-        return Response(serializer.data)
+        return Response({'error': 'Unauthorized: Please log in to view your profile.'}, status=401)
 
+    def put(self, request):
+        return Response({'error': 'Unauthorized: Please log in to update your profile.'}, status=401)
+
+    def patch(self, request):
+        return self.put(request)
+
+class UserProfileEditHistoryView(APIView):
+    permission_classes = []  # Allow any user (no authentication required)
+    def get(self, request):
+        return Response({'error': 'Access denied. Only admin can view edit history.'}, status=403)
+    def post(self, request):
+        required_fields = ['user_id']
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({'error': 'user_id is required.'}, status=400)
+        from .models import Account
+        try:
+            account = Account.objects.get(id=user_id, role='user')
+        except Account.DoesNotExist:
+            return Response({'error': 'User not found or not a user.'}, status=404)
+        # Compare and update all profile fields
+        changed_fields = []
+        for field in ['phone', 'nickname', 'address_street', 'address_house', 'address_district']:
+            if field in request.data:
+                old_value = getattr(account, field, None)
+                new_value = request.data[field]
+                if old_value != new_value:
+                    setattr(account, field, new_value)
+                    changed_fields.append((field, old_value, new_value))
+        account.save()
+        # Save edit history for each changed field
+        for field, old_value, new_value in changed_fields:
+            UserProfileEditHistory.objects.create(
+                user=account,
+                field_changed=field,
+                old_value=old_value,
+                new_value=new_value
+            )
+        return Response({'message': 'Profile updated and history saved.', 'changes': changed_fields}, status=status.HTTP_200_OK)
 
 class UserListView(APIView):
     permission_classes = []
