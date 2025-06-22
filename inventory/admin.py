@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Product, StockEntry, StockExit, StockAdjustment
+from .models import Product, StockEntry, StockExit, StockAdjustment, StockManagement
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
@@ -56,4 +56,24 @@ class StockAdjustmentAdmin(admin.ModelAdmin):
     list_filter = ['adjustment_date']
     search_fields = ['product__name', 'performed_by']
     ordering = ['-adjustment_date']
+
+@admin.register(StockManagement)
+class StockManagementAdmin(admin.ModelAdmin):
+    list_display = [
+        'product',
+        'transaction_type',
+        'quantity',
+        'transaction_date',
+        'performed_by',
+        'price_at_transaction',
+        'total_value',
+        'coupon_code',
+        'discount_percent',
+        'discount_amount',
+        'final_value',
+        'note',
+    ]
+    list_filter = ['transaction_type', 'transaction_date', 'performed_by']
+    search_fields = ['product__name', 'coupon_code', 'performed_by__username']
+    ordering = ['-transaction_date']
 
